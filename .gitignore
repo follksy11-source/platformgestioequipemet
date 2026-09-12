@@ -1,0 +1,26 @@
+node_modules/
+
+.env
+.env.*
+!.env.example
+
+backend/src/generated/
+
+frontend/dist/
+frontend/build/
+
+*.log
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+.agents/
+.claude/
+.windsurf/
+
+# IA tooling caches
+backend/.agents/
+backend/.claude/
+backend/.windsurf/

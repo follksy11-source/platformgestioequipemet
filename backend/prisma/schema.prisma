@@ -1,0 +1,496 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum StatutCompte {
+  EN_ATTENTE
+  VALIDE
+  BLOQUE
+}
+
+enum Role {
+  CHERCHEUR
+  RESPONSABLE_EQUIPEMENT
+  ADMINISTRATEUR
+}
+
+enum StatutLaboratoire {
+  EN_ATTENTE
+  VALIDE
+}
+
+enum DisponibiliteEquipement {
+  INSTALLE_FONCTIONNEL
+  PRESENT_NON_INSTALLE
+  EN_COURS_DE_LIVRAISON
+  PROJET_EN_COURS
+}
+
+enum StatutReservation {
+  EN_ATTENTE
+  ACCEPTEE
+  REFUSEE
+  ANNULEE
+  TERMINEE
+}
+
+enum TypeDemande {
+  AJOUT_LABORATOIRE
+  REJOINDRE_LABORATOIRE
+  DEVENIR_RESPONSABLE
+}
+
+enum StatutDemande {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+}
+
+enum TypePublication {
+  ARTICLE
+  ANNONCE
+  APPEL_A_PROJET
+  APPEL_A_CANDIDATURE
+}
+
+enum StatutPublication {
+  BROUILLON
+  PUBLIEE
+  ARCHIVEE
+}
+
+enum StatutCommentaire {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+enum StatutRapport {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+enum StatutMessage {
+  ENVOYE
+  LU
+}
+
+// ======================================================
+// INSTITUTION
+// ======================================================
+
+model Institution {
+  id      Int     @id @default(autoincrement())
+  nom     String
+  adresse String?
+
+  laboratoires Laboratoire[]
+
+  demandes Demande[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// LABORATOIRE
+// ======================================================
+
+model Laboratoire {
+  id          Int               @id @default(autoincrement())
+  nom         String
+  description String?
+  statut      StatutLaboratoire @default(EN_ATTENTE)
+
+  // Institution facultative
+  institutionId Int?
+  institution   Institution?  @relation(fields: [institutionId], references: [id])
+  // Membres du laboratoire
+  membres       Utilisateur[]
+
+  // Responsable du laboratoire
+  responsable Utilisateur? @relation("ResponsableLaboratoire")
+
+  // Équipements du laboratoire
+  equipements Equipement[]
+
+  demandes Demande[] @relation("LaboratoireDemandes")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([institutionId])
+}
+
+// ======================================================
+// UTILISATEUR
+// ======================================================
+
+model Utilisateur {
+  id Int @id @default(autoincrement())
+
+  nom        String
+  prenom     String
+  email      String @unique
+  motDePasse String
+
+  grade     String?
+  telephone String?
+
+  statutCompte StatutCompte @default(EN_ATTENTE)
+  role         Role         @default(CHERCHEUR)
+
+  dateInscription DateTime @default(now())
+
+  // Laboratoire auquel appartient l'utilisateur
+  laboratoireId Int?
+  laboratoire   Laboratoire? @relation(fields: [laboratoireId], references: [id])
+
+  // Laboratoire éventuellement dirigé
+  laboratoireDirige Laboratoire? @relation("ResponsableLaboratoire", fields: [laboratoireDirigeId], references: [id])
+
+  laboratoireDirigeId Int? @unique
+
+  // Équipements dont l'utilisateur est responsable
+  equipementsResponsable Equipement[] @relation("ResponsableEquipement")
+
+  // Réservations
+  reservations Reservation[]
+
+  // Demandes
+  demandes Demande[]
+
+  // Publications
+  publications Publication[]
+
+  // Messages
+  messagesEnvoyes Message[] @relation("Expediteur")
+  messagesRecus   Message[] @relation("Destinataire")
+
+  // Commentaires
+  commentaires Commentaire[]
+
+  // Rapports
+  rapports Rapport[]
+
+  // Travaux de recherche
+  travauxRecherche TravailRecherche[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// EQUIPEMENT
+// ======================================================
+
+model Equipement {
+  id Int @id @default(autoincrement())
+
+  nom                        String
+  description                String?
+  caracteristiquesTechniques String?
+  photo                      String?
+
+  disponibilite DisponibiliteEquipement
+
+  // Laboratoire bénéficiaire
+  laboratoireId Int
+  laboratoire   Laboratoire @relation(fields: [laboratoireId], references: [id])
+
+  // Responsable facultatif
+  responsableId Int?
+  responsable   Utilisateur? @relation("ResponsableEquipement", fields: [responsableId], references: [id])
+
+  // Réservations
+  reservations Reservation[]
+
+  // Paramètres analytiques
+  parametres EquipementParametre[]
+
+  // Matrices
+  matrices EquipementMatrice[]
+
+  // Travaux de recherche
+  travauxRecherche TravailRecherche[]
+
+  // Messages concernant l'équipement
+  messages Message[]
+
+  // Commentaires
+  commentaires Commentaire[]
+
+  // Rapports
+  rapports Rapport[]
+
+  demandes Demande[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([laboratoireId])
+  @@index([responsableId])
+}
+
+// ======================================================
+// PARAMÈTRE ANALYTIQUE
+// ======================================================
+
+model ParametreAnalytique {
+  id Int @id @default(autoincrement())
+
+  nom         String
+  description String?
+
+  equipements EquipementParametre[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// EQUIPEMENT <-> PARAMÈTRE
+// ======================================================
+
+model EquipementParametre {
+  equipementId Int
+  parametreId  Int
+
+  equipement Equipement @relation(fields: [equipementId], references: [id], onDelete: Cascade)
+
+  parametre ParametreAnalytique @relation(fields: [parametreId], references: [id], onDelete: Cascade)
+
+  @@id([equipementId, parametreId])
+}
+
+// ======================================================
+// MATRICE
+// ======================================================
+
+model Matrice {
+  id Int @id @default(autoincrement())
+
+  nom         String
+  description String?
+
+  equipements EquipementMatrice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// EQUIPEMENT <-> MATRICE
+// ======================================================
+
+model EquipementMatrice {
+  equipementId Int
+  matriceId    Int
+
+  equipement Equipement @relation(fields: [equipementId], references: [id], onDelete: Cascade)
+
+  matrice Matrice @relation(fields: [matriceId], references: [id], onDelete: Cascade)
+
+  @@id([equipementId, matriceId])
+}
+
+// ======================================================
+// RESERVATION
+// ======================================================
+
+model Reservation {
+  id Int @id @default(autoincrement())
+
+  dateDebut DateTime
+  dateFin   DateTime
+  motif     String?
+
+  statut StatutReservation @default(EN_ATTENTE)
+
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+
+  equipementId Int
+  equipement   Equipement @relation(fields: [equipementId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([utilisateurId])
+  @@index([equipementId])
+  @@index([dateDebut, dateFin])
+}
+
+// ======================================================
+// DEMANDE
+// ======================================================
+
+model Demande {
+  id Int @id @default(autoincrement())
+
+  type           TypeDemande
+  contenuDemande String?
+
+  statut StatutDemande @default(EN_ATTENTE)
+  date   DateTime      @default(now())
+
+  utilisateurId Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+
+  // Pour DEVENIR_RESPONSABLE
+  equipementId Int?
+  equipement   Equipement? @relation(fields: [equipementId], references: [id])
+
+  // Pour REJOINDRE_LABORATOIRE
+  laboratoireId Int?
+  laboratoire   Laboratoire? @relation("LaboratoireDemandes", fields: [laboratoireId], references: [id])
+
+  // Pour AJOUT_LABORATOIRE
+  nomLaboratoire         String?
+  descriptionLaboratoire String?
+
+  institutionId Int?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([utilisateurId])
+  @@index([equipementId])
+  @@index([laboratoireId])
+  @@index([institutionId])
+}
+
+// ======================================================
+// PUBLICATION
+// ======================================================
+
+model Publication {
+  id Int @id @default(autoincrement())
+
+  type    TypePublication
+  titre   String
+  contenu String
+  image   String?
+
+  statut StatutPublication @default(BROUILLON)
+
+  date DateTime @default(now())
+
+  auteurId Int
+  auteur   Utilisateur @relation(fields: [auteurId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([auteurId])
+}
+
+// ======================================================
+// MESSAGE
+// ======================================================
+
+model Message {
+  id Int @id @default(autoincrement())
+
+  contenu String
+  date    DateTime      @default(now())
+  statut  StatutMessage @default(ENVOYE)
+
+  expediteurId Int
+  expediteur   Utilisateur @relation("Expediteur", fields: [expediteurId], references: [id])
+
+  destinataireId Int
+  destinataire   Utilisateur @relation("Destinataire", fields: [destinataireId], references: [id])
+
+  equipementId Int?
+  equipement   Equipement? @relation(fields: [equipementId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([expediteurId])
+  @@index([destinataireId])
+  @@index([equipementId])
+}
+
+// ======================================================
+// COMMENTAIRE
+// ======================================================
+
+model Commentaire {
+  id Int @id @default(autoincrement())
+
+  contenu String
+  date    DateTime          @default(now())
+  statut  StatutCommentaire @default(EN_ATTENTE)
+
+  auteurId Int
+  auteur   Utilisateur @relation(fields: [auteurId], references: [id])
+
+  equipementId Int
+  equipement   Equipement @relation(fields: [equipementId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([auteurId])
+  @@index([equipementId])
+}
+
+// ======================================================
+// RAPPORT
+// ======================================================
+
+model Rapport {
+  id Int @id @default(autoincrement())
+
+  contenu String
+  date    DateTime      @default(now())
+  statut  StatutRapport @default(EN_ATTENTE)
+
+  auteurId Int
+  auteur   Utilisateur @relation(fields: [auteurId], references: [id])
+
+  equipementId Int
+  equipement   Equipement @relation(fields: [equipementId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([auteurId])
+  @@index([equipementId])
+}
+
+// ======================================================
+// TRAVAIL DE RECHERCHE
+// ======================================================
+
+model TravailRecherche {
+  id Int @id @default(autoincrement())
+
+  titre       String
+  description String?
+  date        DateTime?
+
+  equipementId Int
+  equipement   Equipement @relation(fields: [equipementId], references: [id])
+
+  auteurId Int?
+  auteur   Utilisateur? @relation(fields: [auteurId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([equipementId])
+  @@index([auteurId])
+}
