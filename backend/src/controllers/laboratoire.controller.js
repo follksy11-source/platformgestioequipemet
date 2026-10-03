@@ -412,11 +412,243 @@ const validerLaboratoire = async (req, res) => {
   }
 };
 
+// =========================================================
+// GET /api/laboratoires/:id/membres
+// Liste des membres d'un laboratoire
+// =========================================================
+const getMembresLaboratoire = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        message: "ID du laboratoire invalide",
+      });
+    }
+
+    const laboratoire = await prisma.laboratoire.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        nom: true,
+        statut: true,
+      },
+    });
+
+    if (!laboratoire) {
+      return res.status(404).json({
+        message: "Laboratoire introuvable",
+      });
+    }
+
+    const membres = await prisma.utilisateur.findMany({
+      where: {
+        laboratoireId: id,
+      },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        telephone: true,
+        grade: true,
+        role: true,
+        statutCompte: true,
+        dateInscription: true,
+      },
+      orderBy: {
+        nom: "asc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        laboratoire,
+        membres,
+        total: membres.length,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur getMembresLaboratoire:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération des membres du laboratoire",
+    });
+  }
+};
+
+// =========================================================
+// GET /api/laboratoires/:id/equipements
+// Liste des équipements d'un laboratoire
+// =========================================================
+const getEquipementsLaboratoire = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID du laboratoire invalide",
+      });
+    }
+
+    const laboratoire = await prisma.laboratoire.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        nom: true,
+        statut: true,
+      },
+    });
+
+    if (!laboratoire) {
+      return res.status(404).json({
+        success: false,
+        message: "Laboratoire introuvable",
+      });
+    }
+
+    const equipements = await prisma.equipement.findMany({
+      where: {
+        laboratoireId: id,
+      },
+      include: {
+        responsable: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            email: true,
+            telephone: true,
+            grade: true,
+          },
+        },
+        categorie: {
+          select: {
+            id: true,
+            nom: true,
+            description: true,
+          },
+        },
+      },
+      orderBy: {
+        nom: "asc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        laboratoire,
+        equipements,
+        total: equipements.length,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur getEquipementsLaboratoire:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération des équipements du laboratoire",
+    });
+  }
+};
+
+ // =========================================================
+ // GET /api/laboratoires/:id/reservations
+ // Réservations des équipements d'un laboratoire
+ // =========================================================
+ const getReservationsLaboratoire = async (req, res) => {
+   try {
+     const id = parseInt(req.params.id);
+
+     if (isNaN(id)) {
+       return res.status(400).json({
+         success: false,
+         message: "ID du laboratoire invalide",
+       });
+     }
+
+     const laboratoire = await prisma.laboratoire.findUnique({
+       where: {
+         id,
+       },
+       select: {
+         id: true,
+         nom: true,
+         statut: true,
+       },
+     });
+
+     if (!laboratoire) {
+       return res.status(404).json({
+         success: false,
+         message: "Laboratoire introuvable",
+       });
+     }
+
+     const reservations = await prisma.reservation.findMany({
+       where: {
+         equipement: {
+           laboratoireId: id,
+         },
+       },
+       include: {
+         equipement: {
+           select: {
+             id: true,
+             nom: true,
+             disponibilite: true,
+           },
+         },
+         utilisateur: {
+           select: {
+             id: true,
+             nom: true,
+             prenom: true,
+             email: true,
+             telephone: true,
+           },
+         },
+       },
+       orderBy: {
+         dateDebut: "asc",
+       },
+     });
+
+     return res.status(200).json({
+       success: true,
+       data: {
+         laboratoire,
+         reservations,
+         total: reservations.length,
+       },
+     });
+   } catch (error) {
+     console.error("Erreur getReservationsLaboratoire:", error);
+
+     return res.status(500).json({
+       success: false,
+       message:
+         "Erreur lors de la récupération des réservations du laboratoire",
+     });
+   }
+ };
+
 module.exports = {
   getLaboratoires,
   getLaboratoireById,
+  getMembresLaboratoire,
   createLaboratoire,
   updateLaboratoire,
   deleteLaboratoire,
   validerLaboratoire,
+  getEquipementsLaboratoire,
+  getReservationsLaboratoire
 };

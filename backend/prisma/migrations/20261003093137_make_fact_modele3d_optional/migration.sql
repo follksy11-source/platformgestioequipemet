@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Fact" ALTER COLUMN "modele3D" DROP NOT NULL;

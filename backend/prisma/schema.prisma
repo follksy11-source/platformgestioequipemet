@@ -85,6 +85,12 @@ enum StatutMessage {
   LU
 }
 
+enum StatutFact {
+  BROUILLON
+  PUBLIE
+  ARCHIVE
+}
+
 // ======================================================
 // INSTITUTION
 // ======================================================
@@ -93,6 +99,7 @@ model Institution {
   id      Int     @id @default(autoincrement())
   nom     String
   adresse String?
+  image   String?
 
   laboratoires Laboratoire[]
 
@@ -110,13 +117,15 @@ model Laboratoire {
   id          Int               @id @default(autoincrement())
   nom         String
   description String?
+  image       String?
   statut      StatutLaboratoire @default(EN_ATTENTE)
 
   // Institution facultative
   institutionId Int?
-  institution   Institution?  @relation(fields: [institutionId], references: [id])
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
   // Membres du laboratoire
-  membres       Utilisateur[]
+  membres Utilisateur[]
 
   // Responsable du laboratoire
   responsable Utilisateur? @relation("ResponsableLaboratoire")
@@ -201,6 +210,7 @@ model Equipement {
   description                String?
   caracteristiquesTechniques String?
   photo                      String?
+  modele3D                   String?
 
   disponibilite DisponibiliteEquipement
 
@@ -238,8 +248,47 @@ model Equipement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+
   @@index([laboratoireId])
   @@index([responsableId])
+}
+
+// ======================================================
+// CATEGORY
+// ======================================================
+
+model Categorie {
+  id          Int     @id @default(autoincrement())
+  nom         String  @unique
+  description String?
+
+  equipements Equipement[]
+
+  facts Fact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Fact {
+  id              Int     @id @default(autoincrement())
+  titre           String
+  contenu         String
+  modele3D        String?
+  imageCouverture String?
+
+  statut StatutFact @default(BROUILLON)
+
+  categorieId Int?
+  categorie   Categorie? @relation(fields: [categorieId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categorieId])
+  @@index([statut])
 }
 
 // ======================================================

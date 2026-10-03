@@ -6,7 +6,9 @@ import Spinner from "../components/Spinner";
 function StatCard({ label, value, sub }) {
   return (
     <div className="border border-line bg-paper p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-ink/50">
+        {label}
+      </p>
       <p className="mt-2 font-display text-3xl text-ink">{value}</p>
       {sub && <p className="mt-1 text-xs text-ink/50">{sub}</p>}
     </div>
@@ -39,19 +41,25 @@ export default function AdminDashboard() {
   }
 
   if (error) {
-    return <p className="mx-auto max-w-3xl px-6 py-16 text-sm text-status-panne">{error}</p>;
+    return (
+      <p className="mx-auto max-w-3xl px-6 py-16 text-sm text-status-panne">
+        {error}
+      </p>
+    );
   }
 
   const labosEnAttente = labos.filter((l) => l.statut === "EN_ATTENTE").length;
   const equipementsDisponibles = equipements.filter(
-    (e) => e.disponibilite === "INSTALLE_FONCTIONNEL"
+    (e) => e.disponibilite === "INSTALLE_FONCTIONNEL",
   ).length;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="border-b border-line pb-4">
         <h1 className="font-display text-3xl text-ink">Tableau de bord</h1>
-        <p className="mt-1 text-sm text-ink/60">Vue d'ensemble de la plateforme</p>
+        <p className="mt-1 text-sm text-ink/60">
+          Vue d'ensemble de la plateforme
+        </p>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-px bg-line sm:grid-cols-4">
@@ -75,18 +83,64 @@ export default function AdminDashboard() {
           className="border border-line bg-paper p-5 transition-colors hover:border-primary"
         >
           <h2 className="font-display text-lg text-ink">Laboratoires</h2>
-          <p className="mt-1 text-sm text-ink/60">Créer, modifier, valider les laboratoires</p>
+          <p className="mt-1 text-sm text-ink/60">
+            Créer, modifier, valider les laboratoires
+          </p>
         </Link>
-        <div className="border border-line bg-paper p-5 opacity-50">
+        <Link
+          to="/admin/equipements"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
           <h2 className="font-display text-lg text-ink">Équipements</h2>
-          <p className="mt-1 text-sm text-ink/60">Gestion à venir</p>
-        </div>
+          <p className="mt-1 text-sm text-ink/60">
+            Créer, modifier, supprimer les équipements
+          </p>
+        </Link>
         <Link
           to="/admin/demandes"
           className="border border-line bg-paper p-5 transition-colors hover:border-primary"
         >
           <h2 className="font-display text-lg text-ink">Demandes</h2>
-          <p className="mt-1 text-sm text-ink/60">Valider ou refuser les demandes en attente</p>
+          <p className="mt-1 text-sm text-ink/60">
+            Valider ou refuser les demandes en attente
+          </p>
+        </Link>
+        <Link
+          to="/admin/utilisateurs"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
+          <h2 className="font-display text-lg text-ink">Utilisateurs</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Valider, bloquer, changer les rôles
+          </p>
+        </Link>
+        <Link
+          to="/admin/Statistiques"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
+          <h2 className="font-display text-lg text-ink">Stats</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Suivre en temps reel les statistiques de la platforme
+          </p>
+        </Link>
+        <Link
+          to="/admin/publications"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
+          <h2 className="font-display text-lg text-ink">Publications</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Articles, annonces, appels à candidature
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/facts"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
+          <h2 className="font-display text-lg text-ink">Facts</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Gérer le contenu "Le saviez-vous ?" de la Home
+          </p>
         </Link>
       </div>
     </div>

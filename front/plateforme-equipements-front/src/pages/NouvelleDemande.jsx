@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { demandesApi } from "../services/api";
 import Spinner from "../components/Spinner";
+import { institutionsApi } from "../services/api";
 
 const TITLES = {
   REJOINDRE_LABORATOIRE: "Rejoindre un laboratoire",
@@ -13,6 +14,15 @@ export default function NouvelleDemande() {
   const [params] = useSearchParams();
   const type = params.get("type") || "REJOINDRE_LABORATOIRE";
   const navigate = useNavigate();
+  const [institutions, setInstitutions] = useState([]);
+  useEffect(() => {
+    if (type === "AJOUT_LABORATOIRE") {
+      institutionsApi
+        .getAll()
+        .then(setInstitutions)
+        .catch(() => {});
+    }
+  }, [type]);
 
   const [form, setForm] = useState({
     laboratoireId: "",
@@ -58,7 +68,9 @@ export default function NouvelleDemande() {
   if (success) {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <p className="text-sm text-status-disponible">Demande envoyée avec succès.</p>
+        <p className="text-sm text-status-disponible">
+          Demande envoyée avec succès.
+        </p>
       </div>
     );
   }
@@ -70,50 +82,97 @@ export default function NouvelleDemande() {
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         {type === "REJOINDRE_LABORATOIRE" && (
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-ink/80">ID du laboratoire</span>
-            <input required type="number" value={form.laboratoireId} onChange={update("laboratoireId")}
-              className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+            <span className="text-sm font-medium text-ink/80">
+              ID du laboratoire
+            </span>
+            <input
+              required
+              type="number"
+              value={form.laboratoireId}
+              onChange={update("laboratoireId")}
+              className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
           </label>
         )}
 
         {type === "AJOUT_LABORATOIRE" && (
           <>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-ink/80">Nom du laboratoire</span>
-              <input required value={form.nomLaboratoire} onChange={update("nomLaboratoire")}
-                className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+              <span className="text-sm font-medium text-ink/80">
+                Nom du laboratoire
+              </span>
+              <input
+                required
+                value={form.nomLaboratoire}
+                onChange={update("nomLaboratoire")}
+                className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-ink/80">Description</span>
-              <textarea rows={2} value={form.descriptionLaboratoire} onChange={update("descriptionLaboratoire")}
-                className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+              <span className="text-sm font-medium text-ink/80">
+                Description
+              </span>
+              <textarea
+                rows={2}
+                value={form.descriptionLaboratoire}
+                onChange={update("descriptionLaboratoire")}
+                className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-ink/80">ID Institution</span>
-              <input required type="number" value={form.institutionId} onChange={update("institutionId")}
-                className="w-32 border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+              <span className="text-sm font-medium text-ink/80">
+                Institution
+              </span>
+              <select
+                required
+                value={form.institutionId}
+                onChange={update("institutionId")}
+                className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                <option value="">Sélectionner...</option>
+                {institutions.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.nom}
+                  </option>
+                ))}
+              </select>
             </label>
           </>
         )}
 
         {type === "DEVENIR_RESPONSABLE" && (
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-ink/80">ID de l'équipement</span>
-            <input required type="number" value={form.equipementId} onChange={update("equipementId")}
-              className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+            <span className="text-sm font-medium text-ink/80">
+              ID de l'équipement
+            </span>
+            <input
+              required
+              type="number"
+              value={form.equipementId}
+              onChange={update("equipementId")}
+              className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
           </label>
         )}
 
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium text-ink/80">Message</span>
-          <textarea rows={3} required value={form.contenuDemande} onChange={update("contenuDemande")}
-            className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+          <textarea
+            rows={3}
+            required
+            value={form.contenuDemande}
+            onChange={update("contenuDemande")}
+            className="border border-line bg-paper px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
         </label>
 
         {error && <p className="text-sm text-status-panne">{error}</p>}
 
-        <button type="submit" disabled={loading}
-          className="mt-2 flex items-center justify-center gap-2 bg-primary py-2.5 text-sm font-medium text-paper hover:bg-primary-dark disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-2 flex items-center justify-center gap-2 bg-primary py-2.5 text-sm font-medium text-paper hover:bg-primary-dark disabled:opacity-50"
+        >
           {loading && <Spinner className="h-4 w-4 text-paper" />}
           {loading ? "Envoi..." : "Envoyer la demande"}
         </button>

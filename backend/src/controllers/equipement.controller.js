@@ -227,11 +227,113 @@ const deleteEquipement = async (req, res) => {
     }
 };
 
+const getDisponibilitesEquipement = async (req, res) => {
+  try {
+    const equipementId = Number(req.params.id);
+
+    if (!Number.isInteger(equipementId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID d'équipement invalide.",
+      });
+    }
+
+    const equipement = await prisma.equipement.findUnique({
+      where: { id: equipementId },
+      select: {
+        id: true,
+        nom: true,
+        disponibilite: true,
+      },
+    });
+
+    if (!equipement) {
+      return res.status(404).json({
+        success: false,
+        message: "Équipement introuvable.",
+      });
+    }
+
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        equipementId,
+        statut: "ACCEPTEE",
+        dateFin: {
+          gte: new Date(),
+        },
+      },
+      select: {
+        id: true,
+        dateDebut: true,
+        dateFin: true,
+      },
+      orderBy: {
+        dateDebut: "asc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        equipement,
+        reservations,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur getDisponibilitesEquipement:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération des disponibilités.",
+    });
+  }
+};
+
+const getMesEquipements = async (req, res) => {
+  try {
+    const equipements = await prisma.equipement.findMany({
+      where: {
+        responsableId: req.user.id,
+      },
+      include: {
+        laboratoire: {
+          select: {
+            id: true,
+            nom: true,
+          },
+        },
+        categorie: {
+          select: {
+            id: true,
+            nom: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: equipements,
+    });
+  } catch (error) {
+    console.error("Erreur getMesEquipements:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération de vos équipements.",
+    });
+  }
+};
 
 module.exports = {
     getEquipements,
     getEquipementById,
     createEquipement,
     updateEquipement,
-    deleteEquipement
+    getDisponibilitesEquipement,
+    deleteEquipement,
+    getMesEquipements,
 };
