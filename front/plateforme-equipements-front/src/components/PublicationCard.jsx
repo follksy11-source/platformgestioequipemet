@@ -1,12 +1,7 @@
 import { Link } from "react-router-dom";
 import { mediaUrl } from "../services/api";
-
-const TYPE_LABELS = {
-  ARTICLE: "Article",
-  ANNONCE: "Annonce",
-  APPEL_A_PROJET: "Appel à projet",
-  APPEL_A_CANDIDATURE: "Appel à candidature",
-};
+import { TYPE_LABELS, isAppel } from "../lib/publications";
+import AppelStatutBadge from "./AppelStatutBadge";
 
 export default function PublicationCard({ publication }) {
   return (
@@ -24,9 +19,14 @@ export default function PublicationCard({ publication }) {
         )}
       </div>
       <div className="p-4">
-        <span className="font-mono text-[11px] text-primary">
-          {TYPE_LABELS[publication.type] || publication.type}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-[11px] text-primary">
+            {TYPE_LABELS[publication.type] || publication.type}
+          </span>
+          {isAppel(publication.type) && (
+            <AppelStatutBadge dateCloture={publication.dateCloture} />
+          )}
+        </div>
         <p className="mt-1 font-display text-base text-ink">
           {publication.titre}
         </p>

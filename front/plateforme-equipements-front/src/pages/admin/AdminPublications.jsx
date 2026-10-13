@@ -2,13 +2,12 @@ import { useState, useEffect } from "react";
 import { publicationsApi } from "../../services/api";
 import StatutPublicationBadge from "../../components/StatutPublicationBadge";
 import Spinner from "../../components/Spinner";
-
-const TYPE_OPTIONS = [
-  { value: "ARTICLE", label: "Article" },
-  { value: "ANNONCE", label: "Annonce" },
-  { value: "APPEL_A_PROJET", label: "Appel à projet" },
-  { value: "APPEL_A_CANDIDATURE", label: "Appel à candidature" },
-];
+import {
+  TYPE_OPTIONS,
+  TYPE_LABELS,
+  isAppel,
+  formatDate,
+} from "../../lib/publications";
 
 function PublicationForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState({
@@ -16,40 +15,51 @@ function PublicationForm({ onSubmit, onCancel }) {
     titre: "",
     contenu: "",
     statut: "BROUILLON",
+    dateCloture: "",
   });
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [pdf, setPdf] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   function update(field) {
-    return (e) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    };
+    return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
 
   function handleImageChange(e) {
     const file = e.target.files?.[0];
-
     if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-    if (!allowedTypes.includes(file.type)) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Choisis une image JPG, PNG ou WEBP.");
       e.target.value = "";
       return;
     }
-
     if (file.size > 10 * 1024 * 1024) {
       setError("L'image ne doit pas dépasser 10 Mo.");
       e.target.value = "";
       return;
     }
-
     setError(null);
     setImage(file);
     setPreview(URL.createObjectURL(file));
+  }
+
+  function handlePdfChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setError("Choisis un fichier PDF.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Le PDF ne doit pas dépasser 20 Mo.");
+      e.target.value = "";
+      return;
+    }
+    setError(null);
+    setPdf(file);
   }
 
   useEffect(() => {
@@ -62,19 +72,20 @@ function PublicationForm({ onSubmit, onCancel }) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       const formData = new FormData();
-
       formData.append("type", form.type);
       formData.append("titre", form.titre);
       formData.append("contenu", form.contenu);
       formData.append("statut", form.statut);
-
-      if (image) {
-        formData.append("image", image);
+      if (isAppel(form.type) && form.dateCloture) {
+        formData.append(
+          "dateCloture",
+          new Date(form.dateCloture).toISOString(),
+        );
       }
-
+      if (image) formData.append("image", image);
+      if (pdf) formData.append("pdf", pdf);
       await onSubmit(formData);
     } catch (err) {
       setError(err.message || "Erreur lors de la création.");
@@ -124,12 +135,25 @@ function PublicationForm({ onSubmit, onCancel }) {
         />
       </label>
 
-      {/* Sélection de l'image */}
+      {isAppel(form.type) && (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-ink/80">
+            Date et heure de clôture
+          </span>
+          <input
+            type="datetime-local"
+            required
+            value={form.dateCloture}
+            onChange={update("dateCloture")}
+            className="w-64 border border-line bg-paper px-3 py-2 text-sm"
+          />
+        </label>
+      )}
+
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink/80">
-          Image de la publication (facultative)
+          Image (facultative)
         </span>
-
         <label className="w-fit cursor-pointer border border-line px-4 py-2 text-sm font-medium text-ink hover:border-primary hover:text-primary">
           Choisir une image
           <input
@@ -139,21 +163,18 @@ function PublicationForm({ onSubmit, onCancel }) {
             className="hidden"
           />
         </label>
-
         {image && (
           <p className="text-xs text-ink/60">
             {image.name} — {(image.size / 1024 / 1024).toFixed(2)} Mo
           </p>
         )}
-
         {preview && (
           <div className="mt-2">
             <img
               src={preview}
-              alt="Aperçu de la publication"
+              alt="Aperçu"
               className="max-h-64 max-w-full border border-line object-contain"
             />
-
             <button
               type="button"
               onClick={() => {
@@ -163,6 +184,35 @@ function PublicationForm({ onSubmit, onCancel }) {
               className="mt-2 text-sm text-status-panne hover:underline"
             >
               Retirer l'image
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-ink/80">
+          Document PDF (facultatif)
+        </span>
+        <label className="w-fit cursor-pointer border border-line px-4 py-2 text-sm font-medium text-ink hover:border-primary hover:text-primary">
+          Choisir un PDF
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handlePdfChange}
+            className="hidden"
+          />
+        </label>
+        {pdf && (
+          <div className="flex items-center gap-3 text-xs text-ink/60">
+            <span>
+              {pdf.name} — {(pdf.size / 1024 / 1024).toFixed(2)} Mo
+            </span>
+            <button
+              type="button"
+              onClick={() => setPdf(null)}
+              className="text-status-panne hover:underline"
+            >
+              Retirer
             </button>
           </div>
         )}
@@ -191,7 +241,6 @@ function PublicationForm({ onSubmit, onCancel }) {
           {loading && <Spinner className="h-4 w-4 text-paper" />}
           {loading ? "Création..." : "Créer"}
         </button>
-
         <button
           type="button"
           onClick={onCancel}
@@ -222,11 +271,11 @@ export default function AdminPublications() {
 
   useEffect(refresh, []);
 
-async function handleCreate(formData) {
-  await publicationsApi.create(formData);
-  setCreating(false);
-  refresh();
-}
+  async function handleCreate(formData) {
+    await publicationsApi.create(formData);
+    setCreating(false);
+    refresh();
+  }
 
   async function handle(action, id) {
     setActionId(id);
@@ -289,7 +338,9 @@ async function handleCreate(formData) {
           >
             <div>
               <span className="font-mono text-[11px] text-primary">
-                {p.type}
+                {TYPE_LABELS[p.type] || p.type}
+                {p.dateCloture && ` · clôture ${formatDate(p.dateCloture)}`}
+                {p.fichierPdf && " · PDF"}
               </span>
               <p className="font-display text-base text-ink">{p.titre}</p>
             </div>

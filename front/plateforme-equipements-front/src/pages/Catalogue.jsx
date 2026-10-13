@@ -79,11 +79,11 @@ export default function Catalogue() {
 
             <div className="mt-auto flex items-center justify-between pt-2">
               <StatusBadge statut={eq.disponibilite} />
-              {eq.laboratoire?.nom && (
+              {/* {eq.laboratoire?.nom && (
                 <span className="font-mono text-[11px] text-ink/40">
                   {eq.laboratoire.nom}
                 </span>
-              )}
+              )} */}
             </div>
           </Link>
         ))}

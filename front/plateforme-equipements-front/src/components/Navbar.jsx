@@ -52,6 +52,16 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
+          {user && user.role !== "ADMINISTRATEUR" && (
+            <NavLink
+              to="/mes-demandes"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${isActive ? "text-primary" : "text-ink/70 hover:text-primary"}`
+              }
+            >
+              Mes demandes
+            </NavLink>
+          )}
           {user && (
             <NavLink
               to="/messages"

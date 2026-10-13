@@ -1,6 +1,7 @@
 const CONFIG = {
   BROUILLON: { label: "Brouillon", color: "bg-ink/40" },
-  PUBLIE: { label: "Publié", color: "bg-status-disponible" },
+  PUBLIEE: { label: "Publié", color: "bg-status-disponible" },
+  ARCHIVEE: { label: "Archivé", color: "bg-status-panne" },
 };
 
 export default function StatutPublicationBadge({ statut }) {

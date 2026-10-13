@@ -1,10 +1,12 @@
 const prisma = require("../lib/prisma");
+const fs = require("fs/promises");
+const path = require("path");
 
 // Créer une publication
 
 const createPublication = async (req, res) => {
   try {
-    const { type, titre, contenu, statut } = req.body;
+    const { type, titre, contenu, statut, dateCloture } = req.body;
 
     // L'utilisateur connecté doit être fourni par le middleware JWT
     const auteurId = req.user.id;
@@ -21,10 +23,30 @@ const createPublication = async (req, res) => {
       });
     }
 
+    const imageFile = getUploadedFile(req, "image");
+    const pdfFile = getUploadedFile(req, "pdf");
+
     // Si une image a été envoyée
     const image = req.file
       ? `/uploads/images/publications/${req.file.filename}`
       : null;
+
+    let cloture = null;
+
+    if (dateCloture) {
+      cloture = new Date(dateCloture);
+
+      if (Number.isNaN(cloture.getTime())) {
+        await Promise.all([
+          removeUploadedFile(imageFile && getImagePath(imageFile.filename)),
+          removeUploadedFile(pdfFile && getPdfPath(pdfFile.filename)),
+        ]);
+
+        return res.status(400).json({
+          message: "La date de clôture est invalide.",
+        });
+      }
+    }
 
     const publication = await prisma.publication.create({
       data: {
@@ -33,7 +55,10 @@ const createPublication = async (req, res) => {
         contenu,
         statut: statut || "BROUILLON",
         auteurId,
-        image,
+        image: imageFile ? getImagePath(imageFile.filename) : null,
+        fichierPdf: pdfFile ? getPdfPath(pdfFile.filename) : null,
+        nomFichierPdf: pdfFile ? pdfFile.originalname : null,
+        dateCloture: cloture,
       },
     });
 
@@ -119,7 +144,9 @@ const getPublicationById = async (req, res) => {
 const updatePublication = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { type, titre, contenu, statut } = req.body;
+    const { type, titre, contenu, statut, dateCloture } = req.body;
+    const imageFile = getUploadedFile(req, "image");
+    const pdfFile = getUploadedFile(req, "pdf");
 
     const publication = await prisma.publication.findUnique({
       where: { id },
@@ -131,6 +158,27 @@ const updatePublication = async (req, res) => {
       });
     }
 
+    let cloture;
+
+    if (dateCloture !== undefined) {
+      if (dateCloture === "") {
+        cloture = null;
+      } else {
+        cloture = new Date(dateCloture);
+
+        if (Number.isNaN(cloture.getTime())) {
+          await Promise.all([
+            removeUploadedFile(imageFile && getImagePath(imageFile.filename)),
+            removeUploadedFile(pdfFile && getPdfPath(pdfFile.filename)),
+          ]);
+
+          return res.status(400).json({
+            message: "La date de clôture est invalide.",
+          });
+        }
+      }
+    }
+
     const updated = await prisma.publication.update({
       where: { id },
       data: {
@@ -138,8 +186,26 @@ const updatePublication = async (req, res) => {
         ...(titre !== undefined && { titre }),
         ...(contenu !== undefined && { contenu }),
         ...(statut !== undefined && { statut }),
+        ...(dateCloture !== undefined && { dateCloture: cloture }),
+
+        ...(imageFile && {
+          image: getImagePath(imageFile.filename),
+        }),
+
+        ...(pdfFile && {
+          fichierPdf: getPdfPath(pdfFile.filename),
+          nomFichierPdf: pdfFile.originalname,
+        }),
       },
     });
+
+    if (imageFile && publication.image) {
+      await removeUploadedFile(publication.image);
+    }
+
+    if (pdfFile && publication.fichierPdf) {
+      await removeUploadedFile(publication.fichierPdf);
+    }
 
     res.json({
       message: "Publication modifiée avec succès.",
@@ -289,6 +355,74 @@ const deletePublicationImage = async (req, res) => {
   }
 };
 
+const getUploadedFile = (req, field) => req.files?.[field]?.[0];
+
+const getPdfPath = (filename) => `/uploads/pdfs/publications/${filename}`;
+
+const getImagePath = (filename) => `/uploads/images/publications/${filename}`;
+
+const removeUploadedFile = async (publicPath) => {
+  if (!publicPath) return;
+
+  const filename = path.basename(publicPath);
+
+  const directory = publicPath.startsWith("/uploads/pdfs/publications/")
+    ? path.join(process.cwd(), "uploads/pdfs/publications")
+    : path.join(process.cwd(), "uploads/images/publications");
+
+  try {
+    await fs.unlink(path.join(directory, filename));
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("Erreur suppression fichier :", error);
+    }
+  }
+};
+
+// Suprimer le pdf
+
+const deletePublicationPdf = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        message: "Identifiant de publication invalide.",
+      });
+    }
+
+    const publication = await prisma.publication.findUnique({
+      where: { id },
+    });
+
+    if (!publication) {
+      return res.status(404).json({
+        message: "Publication introuvable.",
+      });
+    }
+
+    await prisma.publication.update({
+      where: { id },
+      data: {
+        fichierPdf: null,
+        nomFichierPdf: null,
+      },
+    });
+
+    await removeUploadedFile(publication.fichierPdf);
+
+    return res.json({
+      message: "PDF supprimé avec succès.",
+    });
+  } catch (error) {
+    console.error("Erreur deletePublicationPdf :", error);
+
+    return res.status(500).json({
+      message: "Erreur lors de la suppression du PDF.",
+    });
+  }
+};
+
 module.exports = {
   createPublication,
   getPublications,
@@ -299,4 +433,5 @@ module.exports = {
   depublierPublication,
   deletePublication,
   deletePublicationImage,
+  deletePublicationPdf
 };

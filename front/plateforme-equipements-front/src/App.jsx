@@ -29,6 +29,9 @@ import AdminStatistiques from "./pages/admin/AdminStatistiques";
 import AdminFacts from "./pages/admin/AdminFacts";
 import AdminPublications from "./pages/admin/AdminPublications";
 import PublicationDetail from "./pages/PublicationDetail";
+import { Navigate } from "react-router-dom";
+import Actualites from "./pages/Actualites";
+import Appels from "./pages/Appels";
 export default function App() {
   return (
     <AuthProvider>
@@ -208,6 +211,13 @@ export default function App() {
               <AdminPublications />
             </ProtectedRoute>
           }
+        />
+        <Route path="/publications/:id" element={<PublicationDetail />} />
+        <Route path="/actualites" element={<Actualites />} />
+        <Route path="/appels" element={<Appels />} />
+        <Route
+          path="/publications"
+          element={<Navigate to="/actualites" replace />}
         />
         <Route path="/publications/:id" element={<PublicationDetail />} />
       </Routes>

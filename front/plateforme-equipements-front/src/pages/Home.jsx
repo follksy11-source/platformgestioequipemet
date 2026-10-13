@@ -13,7 +13,6 @@ import ImageCarousel from "../components/ImageCarousel";
 import PublicationCard from "../components/PublicationCard";
 import Spinner from "../components/Spinner";
 import FactsSection from "../components/FactsSection";
-
 const TYPE_LABELS = {
   ARTICLE: "Article",
   ANNONCE: "Annonce",
@@ -50,7 +49,7 @@ export default function Home() {
   }));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-7xl px-6 py-10">
       {/* Bandeau d'intro */}
       <div className="border-b border-line pb-8">
         <span className="font-mono text-xs text-ink/50">
@@ -128,22 +127,17 @@ export default function Home() {
 
       {/* Publications / actualités AIEA */}
       {publications.length > 0 && (
-        <div className="mt-10">
-          <div className="flex items-end justify-between border-b border-line pb-3">
-            <h2 className="font-display text-xl text-ink">
-              Actualités & appels AIEA
-            </h2>
-            <Link
-              to="/publications"
-              className="text-sm text-primary hover:underline"
-            >
-              Voir tout →
+        <div className="flex items-end justify-between border-b border-line pb-3">
+          <h2 className="font-display text-xl text-ink">
+            Actualités & appels AIEA
+          </h2>
+          <div className="flex gap-4 text-sm">
+            <Link to="/actualites" className="text-primary hover:underline">
+              Actualités →
             </Link>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-            {publications.slice(0, 3).map((p) => (
-              <PublicationCard key={p.id} publication={p} />
-            ))}
+            <Link to="/appels" className="text-primary hover:underline">
+              Appels →
+            </Link>
           </div>
         </div>
       )}

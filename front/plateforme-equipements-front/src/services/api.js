@@ -1,7 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
-
+export const AUTH_EXPIRED_EVENT = "auth:expired";
+const AUTH_PATHS = ["/auth/login", "/auth/register"];
 
 export function mediaUrl(path) {
   if (!path) return null;
@@ -17,6 +18,29 @@ function getToken() {
   return localStorage.getItem("token");
 }
 
+async function throwApiError(res, path, hadToken) {
+  const error = await res.json().catch(() => ({}));
+  const message = error.message || "";
+
+  const tokenProblem =
+    res.status === 401 ||
+    (res.status === 403 && /token|jwt|expir|invalide/i.test(message));
+
+  // Un 401 sur login/register
+  // Sans token envoyé, il n'y a pas de session à fermer.
+  if (tokenProblem && hadToken && !AUTH_PATHS.includes(path)) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.setItem("session_expired", "1");
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    const err = new Error("Votre session a expiré. Veuillez vous reconnecter.");
+    err.code = "SESSION_EXPIRED";
+    throw err;
+  }
+
+  throw new Error(message || `Erreur ${res.status}`);
+}
+
 async function request(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -26,10 +50,7 @@ async function request(path, options = {}) {
     },
     ...options,
   });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || `Erreur ${res.status}`);
-  }
+  if (!res.ok) await throwApiError(res, path, !!token);
   return res.status === 204 ? null : res.json();
 }
 
@@ -38,21 +59,14 @@ async function requestFormData(path, formData, method = "POST") {
 
   const res = await fetch(`${API_URL}${path}`, {
     method,
-    headers: token
-      ? { Authorization: `Bearer ${token}` }
-      : {},
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || `Erreur ${res.status}`);
-  }
+  if (!res.ok) await throwApiError(res, path, !!token);
 
   return res.status === 204 ? null : res.json();
 }
-
-
 
 export const authApi = {
   register: (data) =>
@@ -211,14 +225,11 @@ export const utilisateursApi = {
 };
 
 export const publicationsApi = {
-  getAll: () =>
-    request("/publications").then((d) => d.publications),
+  getAll: () => request("/publications").then((d) => d.publications),
 
-  getById: (id) =>
-    request(`/publications/${id}`).then((d) => d.publication),
+  getById: (id) => request(`/publications/${id}`).then((d) => d.publication),
 
-  admin: () =>
-    request("/publications/admin").then((d) => d.publications),
+  admin: () => request("/publications/admin").then((d) => d.publications),
 
   // Création avec image facultative
   create: (data) => {
@@ -245,17 +256,13 @@ export const publicationsApi = {
     });
   },
 
-  publier: (id) =>
-    request(`/publications/${id}/publier`, { method: "PATCH" }),
+  publier: (id) => request(`/publications/${id}/publier`, { method: "PATCH" }),
 
   depublier: (id) =>
     request(`/publications/${id}/depublier`, { method: "PATCH" }),
 
-  remove: (id) =>
-    request(`/publications/${id}`, { method: "DELETE" }),
+  remove: (id) => request(`/publications/${id}`, { method: "DELETE" }),
 };
-
-
 
 export const institutionsApi = {
   getAll: () => request("/institutions").then((d) => d.data),
@@ -271,10 +278,7 @@ async function uploadRequest(path, file, method = "POST") {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || `Erreur ${res.status}`);
-  }
+  if (!res.ok) await throwApiError(res, path, !!token);
   return res.json();
 }
 
@@ -294,8 +298,10 @@ export const factsApi = {
   getById: (id) => request(`/facts/${id}`).then((d) => d.fact),
   adminAll: () => request("/facts/admin/all").then((d) => d.facts),
   getCategories: () => request("/facts/categories").then((d) => d.categories),
-  create: (data) => request("/facts", { method: "POST", body: JSON.stringify(data) }),
-  update: (id, data) => request(`/facts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  create: (data) =>
+    request("/facts", { method: "POST", body: JSON.stringify(data) }),
+  update: (id, data) =>
+    request(`/facts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   publier: (id) => request(`/facts/${id}/publier`, { method: "PATCH" }),
   archiver: (id) => request(`/facts/${id}/archiver`, { method: "PATCH" }),
   remove: (id) => request(`/facts/${id}`, { method: "DELETE" }),

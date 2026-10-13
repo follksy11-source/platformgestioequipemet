@@ -60,6 +60,7 @@ enum TypePublication {
   ANNONCE
   APPEL_A_PROJET
   APPEL_A_CANDIDATURE
+  APPEL_D_OFFRES
 }
 
 enum StatutPublication {
@@ -114,11 +115,12 @@ model Institution {
 // ======================================================
 
 model Laboratoire {
-  id          Int               @id @default(autoincrement())
-  nom         String
-  description String?
-  image       String?
-  statut      StatutLaboratoire @default(EN_ATTENTE)
+  id           Int               @id @default(autoincrement())
+  nom          String
+  description  String?
+  image        String?
+  localisation String?
+  statut       StatutLaboratoire @default(EN_ATTENTE)
 
   // Institution facultative
   institutionId Int?
@@ -427,10 +429,13 @@ model Demande {
 model Publication {
   id Int @id @default(autoincrement())
 
-  type    TypePublication
-  titre   String
-  contenu String
-  image   String?
+  type          TypePublication
+  titre         String
+  contenu       String
+  image         String?
+  fichierPdf    String?
+  nomFichierPdf String?
+  dateCloture   DateTime?
 
   statut StatutPublication @default(BROUILLON)
 

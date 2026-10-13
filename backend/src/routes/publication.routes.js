@@ -10,11 +10,12 @@ const {
   depublierPublication,
   deletePublication,
   deletePublicationImage,
+  deletePublicationPdf
 } = require("../controllers/publication.controller");
 
 const authenticate = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
-const uploadPublicationImage = require("../middleware/publicationUpload");
+const uploadPublicationFiles = require("../middleware/publicationFilesUpload");
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.post(
   "/",
   authenticate,
   authorize("ADMINISTRATEUR"),
-  uploadPublicationImage.single("image"),
+  uploadPublicationFiles,
   createPublication
 );
 
@@ -52,7 +53,7 @@ router.put(
   "/:id",
   authenticate,
   authorize("ADMINISTRATEUR"),
-  uploadPublicationImage.single("image"),
+  uploadPublicationFiles,
   updatePublication
 );
 
@@ -86,6 +87,13 @@ router.delete(
   authenticate,
   authorize("ADMINISTRATEUR"),
   deletePublication
+);
+
+router.delete(
+  "/:id/pdf",
+  authenticate,
+  authorize("ADMINISTRATEUR"),
+  deletePublicationPdf
 );
 
 module.exports = router;
