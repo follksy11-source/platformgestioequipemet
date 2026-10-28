@@ -9,7 +9,8 @@ const {
     updateEquipement,
     deleteEquipement,
     getDisponibilitesEquipement,
-    getMesEquipements
+    getMesEquipements,
+    getReservationsEquipement,
 } = require("../controllers/equipement.controller");
 
 const router = express.Router();
@@ -24,6 +25,12 @@ router.get(
   authenticate,
   authorize("RESPONSABLE_EQUIPEMENT", "ADMINISTRATEUR"),
   getMesEquipements
+);
+router.get(
+  "/:id/reservations",
+  authenticate,
+  authorize("ADMINISTRATEUR", "RESPONSABLE_EQUIPEMENT"),
+  getReservationsEquipement
 );
 
 router.get("/:id", getEquipementById);
