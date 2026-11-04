@@ -266,22 +266,15 @@ export const publicationsApi = {
 
 export const institutionsApi = {
   getAll: () => request("/institutions").then((d) => d.data),
+  create: (data) =>
+    request("/institutions", { method: "POST", body: JSON.stringify(data) }),
+  update: (id, data) =>
+    request(`/institutions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  remove: (id) => request(`/institutions/${id}`, { method: "DELETE" }),
 };
-
-async function uploadRequest(path, file, method = "POST") {
-  const token = getToken();
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  });
-  if (!res.ok) await throwApiError(res, path, !!token);
-  return res.json();
-}
-
 export const uploadsApi = {
   uploadPhoto: (resource, id, file) =>
     uploadRequest(`/uploads/${resource}/${id}/photo`, file),

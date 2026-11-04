@@ -142,6 +142,15 @@ export default function AdminDashboard() {
             Gérer le contenu "Le saviez-vous ?" de la Home
           </p>
         </Link>
+        <Link
+          to="/admin/institutions"
+          className="border border-line bg-paper p-5 transition-colors hover:border-primary"
+        >
+          <h2 className="font-display text-lg text-ink">Institutions</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Universités et organismes auxquels sont rattachés les laboratoires
+          </p>
+        </Link>
       </div>
     </div>
   );

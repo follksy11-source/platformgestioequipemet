@@ -32,6 +32,8 @@ import PublicationDetail from "./pages/PublicationDetail";
 import { Navigate } from "react-router-dom";
 import Actualites from "./pages/Actualites";
 import Appels from "./pages/Appels";
+import AdminInstitutions from "./pages/admin/AdminInstitutions";
+
 export default function App() {
   return (
     <AuthProvider>
@@ -220,6 +222,14 @@ export default function App() {
           element={<Navigate to="/actualites" replace />}
         />
         <Route path="/publications/:id" element={<PublicationDetail />} />
+        <Route
+          path="/admin/institutions"
+          element={
+            <ProtectedRoute allowedRoles={["ADMINISTRATEUR"]}>
+              <AdminInstitutions />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </AuthProvider>
   );
